@@ -72,6 +72,9 @@ menus:
   purePermissionButton: 按钮权限
   purePermissionButtonRouter: 路由返回按钮权限
   purePermissionButtonLogin: 登录接口返回按钮权限
+  dailyManagement: 日报管理
+  dailyTaskList: 日报任务列表
+  dailyTaskCreate: 新建日报任务
 status:
   pureLoad: 加载中...
   pureMessage: 消息
