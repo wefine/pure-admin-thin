@@ -1,6 +1,6 @@
 {
-  "Version": "6.0.0",
-  "Title": "智探信息平台",
+  "Version": "0.0.1",
+  "Title": "智探信息管理平台",
   "FixedHeader": true,
   "HiddenSideBar": false,
   "MultiTagsCache": false,

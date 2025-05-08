@@ -35,36 +35,42 @@ const {
       :model="form"
       class="search-form bg-bg_color w-full pl-8 pt-[12px] overflow-auto"
     >
-      <el-form-item label="任务名称" prop="username">
-        <el-input
-          v-model="form.username"
-          placeholder="请输入任务名称"
-          clearable
-          class="w-[180px]!"
-        />
-      </el-form-item>
-      <el-form-item class="flex w-7xl">
-        <el-col :span="16">
-          <el-button
-            type="primary"
-            :icon="useRenderIcon('ri:search-line')"
-            :loading="loading"
-            @click="onSearch"
-          >
-            搜索
-          </el-button>
-          <el-button :icon="useRenderIcon(Refresh)" @click="resetForm(formRef)">
-            重置
-          </el-button>
-        </el-col>
-        <el-col :span="8">
+      <div class="flex w-full justify-between items-center">
+        <div class="flex items-center gap-4">
+          <el-form-item label="任务名称" prop="username">
+            <el-input
+              v-model="form.username"
+              placeholder="请输入任务名称"
+              clearable
+              class="w-[180px]!"
+            />
+          </el-form-item>
+          <el-form-item class="mb-0">
+            <el-button
+              type="primary"
+              :icon="useRenderIcon('ri:search-line')"
+              :loading="loading"
+              @click="onSearch"
+            >
+              搜索
+            </el-button>
+            <el-button
+              :icon="useRenderIcon(Refresh)"
+              @click="resetForm(formRef)"
+            >
+              重置
+            </el-button>
+          </el-form-item>
+        </div>
+        <div style="margin-top: -10px; margin-right: 10px">
           <el-button
             type="success"
-            @click="$router.push('/daily-management/task-create')"
-            >新建任务</el-button
+            @click="$router.push('/daily-management/task-edit')"
           >
-        </el-col>
-      </el-form-item>
+            新建任务
+          </el-button>
+        </div>
+      </div>
     </el-form>
 
     <PureTableBar title="任务列表" :columns="columns" @refresh="onSearch">

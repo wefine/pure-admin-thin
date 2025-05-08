@@ -19,12 +19,12 @@ export default {
       }
     },
     {
-      path: "/daily-management/task-create",
-      name: "DailyManagementCreate",
-      component: () => import("@/views/daily/task/taskcreate/index.vue"),
+      path: "/daily-management/task-edit",
+      name: "DailyManagementEdit",
+      component: () => import("@/views/daily/task/taskedit/index.vue"),
       meta: {
         icon: "ep:edit",
-        title: $t("menus.dailyTaskCreate")
+        title: $t("menus.dailyTaskEdit")
       }
     }
   ]

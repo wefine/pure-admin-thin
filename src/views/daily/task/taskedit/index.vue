@@ -1,6 +1,19 @@
 <script setup lang="ts">
-import { reactive, ref } from "vue";
-import { ArrowDown, ArrowUp, Delete, Plus } from "@element-plus/icons-vue";
+import { reactive, ref, computed } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { ElMessage } from "element-plus";
+import dailyApi from "@/api/daily";
+import { ArrowDown, ArrowUp } from "@element-plus/icons-vue";
+import KeyValueEditor from "@/components/form/KeyValueEditor.vue";
+
+// 获取路由参数
+const route = useRoute();
+
+// 编辑状态 - 从路由参数获取，默认为true
+const isEditing = computed(() => {
+  // 如果路由参数中有editable且值为'false'，则返回false，否则默认为true
+  return route.query.editable !== "false";
+});
 
 // 表单数据模型
 const formData = reactive({
@@ -62,14 +75,29 @@ const webParseOptions = [
   { label: "TechWebParse", value: "TechWebParse" }
 ];
 
-// 提交表单
-const submitForm = () => {
-  console.log("提交数据:", formData);
-  // 更新标签和场景代码
-  formData.task_config.post_process.space.label = `${formData.task_config.domain}早报`;
-  formData.task_config.post_process.igpt.scene_code = `${formData.task_config.domain}AINews`;
+// 获取路由实例
+const router = useRouter();
 
-  // TODO: 这里添加API调用
+// 提交表单
+const submitForm = async () => {
+  // 创建完整的数据对象 - 使用JSON序列化完全解构Vue的Proxy对象
+  const completeData = JSON.parse(
+    JSON.stringify({
+      task_config: formData.task_config,
+      template_mapping: formData.template_mapping,
+      report_template: formData.report_template
+    })
+  );
+
+  // 输出完整数据对象
+  console.log("提交的完整数据对象:", completeData);
+
+  // TODO: 这里添加API调用 - 使用完整数据对象
+  const response = await dailyApi.createTask(completeData);
+  if (response.code === 0) {
+    ElMessage.success("创建任务成功");
+    router.push("/daily-management/task-list");
+  }
 };
 
 // 生成任务代码（基于任务名称生成英文代码）
@@ -94,44 +122,6 @@ const cardVisible = reactive({
   card4: true,
   card5: true
 });
-
-// 微信公众号管理
-const wechatKeyTemp = reactive({});
-const newWechatName = ref("");
-const newWechatBiz = ref("");
-
-// 添加微信公众号
-const addWechatAccount = () => {
-  if (newWechatName.value.trim()) {
-    formData.task_config.collect.wechat[newWechatName.value] =
-      newWechatBiz.value || "";
-    wechatKeyTemp[newWechatName.value] = newWechatName.value;
-    newWechatName.value = "";
-    newWechatBiz.value = "";
-  }
-};
-
-// 删除微信公众号
-const deleteWechatAccount = key => {
-  delete formData.task_config.collect.wechat[key];
-  delete wechatKeyTemp[key];
-};
-
-// 更新微信公众号名称
-const updateWechatKey = (oldKey, newKey) => {
-  if (oldKey !== newKey && newKey.trim()) {
-    const value = formData.task_config.collect.wechat[oldKey];
-    deleteWechatAccount(oldKey);
-    formData.task_config.collect.wechat[newKey] = value;
-    wechatKeyTemp[newKey] = newKey;
-  }
-};
-
-// 初始化微信公众号临时名称
-// 对所有已存在的公众号初始化名称
-for (const key in formData.task_config.collect.wechat) {
-  wechatKeyTemp[key] = key;
-}
 
 // 切换卡片内容显示/隐藏
 const toggleCard = cardId => {
@@ -245,54 +235,12 @@ const toggleCard = cardId => {
               </el-select>
             </el-form-item>
             <el-form-item label="微信公众号">
-              <!-- 新增公众号区域 -->
-              <div class="mb-4 flex flex-col">
-                <div class="flex items-center gap-2 mb-4">
-                  <el-input
-                    v-model="newWechatName"
-                    placeholder="公众号名称"
-                    style="width: 180px"
-                  />
-                  <el-input
-                    v-model="newWechatBiz"
-                    placeholder="公众号标识"
-                    style="width: 320px"
-                  />
-                  <el-button
-                    type="primary"
-                    circle
-                    :disabled="!newWechatName.trim()"
-                    @click="addWechatAccount"
-                  >
-                    <el-icon><Plus /></el-icon>
-                  </el-button>
-                </div>
-                <!-- 公众号列表 -->
-                <div
-                  v-for="(value, key) in formData.task_config.collect.wechat"
-                  :key="key"
-                  class="mb-2 flex items-center gap-2"
-                >
-                  <el-input
-                    v-model="wechatKeyTemp[key]"
-                    style="width: 180px"
-                    placeholder="公众号名称"
-                    @change="updateWechatKey(key, wechatKeyTemp[key])"
-                  />
-                  <el-input
-                    v-model="formData.task_config.collect.wechat[key]"
-                    style="width: 320px"
-                    placeholder="公众号标识"
-                  />
-                  <el-button
-                    type="danger"
-                    circle
-                    @click="deleteWechatAccount(key)"
-                  >
-                    <el-icon><Delete /></el-icon>
-                  </el-button>
-                </div>
-              </div>
+              <KeyValueEditor
+                v-model="formData.task_config.collect.wechat"
+                key-placeholder="公众号名称，如: 财经新商业"
+                value-placeholder="公众号标识，如: MzkzNDY4OTQ4MA"
+                :editable="isEditing"
+              />
             </el-form-item>
           </div>
         </el-card>
@@ -313,21 +261,23 @@ const toggleCard = cardId => {
             </div>
           </template>
           <div v-show="cardVisible.card3">
-            <el-form-item label="内容限制" prop="pre_process.restrictions">
+            <el-form-item label="过滤提示词" prop="pre_process.restrictions">
               <el-input
                 v-model="formData.task_config.pre_process.restrictions"
                 type="textarea"
-                :rows="4"
-                placeholder="设置新闻内容的筛选条件"
+                :rows="6"
+                placeholder="设置新闻内容的过滤提示词，示例如：新闻应属于电信、通讯、电子、能源、AI、财务等领域，与这些领域相关的关键词包括：战略、行业、资本、政策、合规、风险等。"
               />
             </el-form-item>
-            <el-form-item label="关键词筛选" prop="pre_process.keywords_filter">
-              <el-select
-                v-model="formData.task_config.pre_process.keywords_filter"
-                multiple
-                filterable
-                allow-create
-                placeholder="请输入关键词"
+            <el-form-item
+              label="分类提示词"
+              prop="pre_process.classify_criterion"
+            >
+              <el-input
+                v-model="formData.task_config.pre_process.classify_criterion"
+                type="textarea"
+                :rows="6"
+                placeholder="设置新闻内容的分类提示词，示例如：1. 融资并购 划分标准：该类新闻聚焦大模型领域资金动态与市场整合趋势，涵盖企业大额融资事件、战略投资方向及并购案例，展现资本对行业的推动作用与市场格局重塑。2. 政策合规 划分标准：梳理国内外大模型相关政策法规的核心要求与实施细则，分析企业在数据安全、算法透明、伦理审查等方面的合规举措与应对策略。"
               />
             </el-form-item>
           </div>
@@ -349,59 +299,40 @@ const toggleCard = cardId => {
             </div>
           </template>
           <div v-show="cardVisible.card4">
-            <h4 class="font-medium mb-3">空间配置</h4>
-            <el-form-item label="空间ID" prop="post_process.space.space_id">
+            <el-form-item label="日报模板" prop="report_template">
               <el-input
-                v-model="formData.task_config.post_process.space.space_id"
-                placeholder="空间ID"
+                v-model="formData.report_template"
+                type="textarea"
+                :rows="10"
+                placeholder="请输入日报生成模板"
               />
             </el-form-item>
-            <el-form-item
-              label="目录ID"
-              prop="post_process.space.parent_catalog_id"
-            >
-              <el-input
-                v-model="
-                  formData.task_config.post_process.space.parent_catalog_id
-                "
-                placeholder="目录ID"
+            <el-form-item label="模板变量映射" prop="template_mapping">
+              <KeyValueEditor
+                v-model="formData.template_mapping"
+                key-placeholder="分类名称"
+                value-placeholder="映射变量名称"
+                :editable="isEditing"
               />
             </el-form-item>
-            <el-form-item label="标签" prop="post_process.space.label">
-              <el-input
-                v-model="formData.task_config.post_process.space.label"
-                placeholder="空间标签"
-                disabled
-              />
-              <div class="text-gray-400 text-sm mt-1">根据所选领域自动生成</div>
-            </el-form-item>
-
-            <h4 class="font-medium mb-3 mt-5">IGPT配置</h4>
-            <el-form-item label="场景ID" prop="post_process.igpt.scene_id">
-              <el-input
-                v-model="formData.task_config.post_process.igpt.scene_id"
-                placeholder="场景ID"
-              />
-            </el-form-item>
-            <el-form-item label="场景代码" prop="post_process.igpt.scene_code">
-              <el-input
-                v-model="formData.task_config.post_process.igpt.scene_code"
-                placeholder="场景代码"
-                disabled
-              />
-              <div class="text-gray-400 text-sm mt-1">根据所选领域自动生成</div>
-            </el-form-item>
-
-            <h4 class="font-medium mb-3 mt-5">知识库配置</h4>
-            <el-form-item
-              label="知识库ID"
-              prop="post_process.knowledge.kbase_id"
-            >
-              <el-input
-                v-model="formData.task_config.post_process.knowledge.kbase_id"
-                placeholder="知识库ID"
-              />
-            </el-form-item>
+            <div class="hidden">
+              <!-- 保留原先的模板变量映射实现，使用display:none隐藏 -->
+              <div
+                v-for="(value, key) in formData.template_mapping"
+                :key="key"
+                class="mb-2 flex items-center"
+              >
+                <div
+                  class="el-input mr-2 w-1/3 flex items-center px-3 bg-gray-100 border rounded"
+                >
+                  {{ key }}
+                </div>
+                <el-input
+                  v-model="formData.template_mapping[key]"
+                  placeholder="映射变量名"
+                />
+              </div>
+            </div>
           </div>
         </el-card>
 
@@ -421,36 +352,104 @@ const toggleCard = cardId => {
             </div>
           </template>
           <div v-show="cardVisible.card5">
-            <el-form-item label="推送时间(cron表达式)" prop="push_cron">
-              <el-input
-                v-model="formData.task_config.push_cron"
-                placeholder="cron表达式，如: 0 7 * * *"
-              />
-              <div class="text-gray-400 text-sm mt-1">
-                默认为每天7点，格式：分 时 日 月 周
-              </div>
-            </el-form-item>
-            <el-divider content-position="center">模板映射</el-divider>
-            <div
-              v-for="(value, key) in formData.template_mapping"
-              :key="key"
-              class="mb-2 flex items-center"
-            >
-              <div
-                class="el-input mr-2 w-1/3 flex items-center px-3 bg-gray-100 border rounded"
+            <h4 class="font-medium mb-3 mt-5">时间配置</h4>
+            <div class="flex flex-wrap gap-4">
+              <el-form-item
+                label="推送时间"
+                prop="push_cron"
+                class="flex-1 min-w-[300px]"
               >
-                {{ key }}
-              </div>
-              <el-input
-                v-model="formData.template_mapping[key]"
-                placeholder="映射变量名"
-              />
+                <el-input
+                  v-model="formData.task_config.push_cron"
+                  placeholder="cron表达式，如: 0 7 * * *"
+                />
+                <div class="text-gray-400 text-sm mt-1">
+                  默认为每天7点，格式：分 时 日 月 周
+                </div>
+              </el-form-item>
             </div>
+            <h4 class="font-medium mb-3">空间配置</h4>
+            <div class="flex flex-wrap gap-4">
+              <el-form-item
+                label="空间ID"
+                prop="post_process.space.space_id"
+                class="flex-1 min-w-[200px]"
+              >
+                <el-input
+                  v-model="formData.task_config.post_process.space.space_id"
+                  placeholder="空间ID"
+                />
+              </el-form-item>
+              <el-form-item
+                label="存放目录ID"
+                prop="post_process.space.parent_catalog_id"
+                class="flex-1 min-w-[200px]"
+              >
+                <el-input
+                  v-model="
+                    formData.task_config.post_process.space.parent_catalog_id
+                  "
+                  placeholder="存放目录ID"
+                />
+              </el-form-item>
+              <el-form-item
+                label="空间标签"
+                prop="post_process.space.label"
+                class="flex-1 min-w-[200px]"
+              >
+                <el-input
+                  v-model="formData.task_config.post_process.space.label"
+                  placeholder="空间标签"
+                />
+              </el-form-item>
+            </div>
+
+            <h4 class="font-medium mb-3 mt-5">IGPT配置</h4>
+            <div class="flex flex-wrap gap-4">
+              <el-form-item
+                label="事项ID"
+                prop="post_process.igpt.scene_id"
+                class="flex-1 min-w-[200px]"
+              >
+                <el-input
+                  v-model="formData.task_config.post_process.igpt.scene_id"
+                  placeholder="事项ID"
+                />
+              </el-form-item>
+              <el-form-item
+                label="事项编码"
+                prop="post_process.igpt.scene_code"
+                class="flex-1 min-w-[200px]"
+              >
+                <el-input
+                  v-model="formData.task_config.post_process.igpt.scene_code"
+                  placeholder="事项编码"
+                />
+              </el-form-item>
+            </div>
+
+            <h4 class="font-medium mb-3 mt-5">知识库配置</h4>
+            <div class="flex flex-wrap gap-4">
+              <el-form-item
+                label="知识库ID"
+                prop="post_process.knowledge.kbase_id"
+                class="flex-1 min-w-[200px]"
+              >
+                <el-input
+                  v-model="formData.task_config.post_process.knowledge.kbase_id"
+                  placeholder="知识库ID"
+                />
+              </el-form-item>
+            </div>
+          </div>
+        </el-card>
+        <el-card class="mb-5">
+          <div class="flex justify-center">
+            <el-button type="primary" @click="submitForm">提交</el-button>
           </div>
         </el-card>
       </div>
     </el-form>
-    <el-button type="primary" @click="submitForm">提交</el-button>
   </div>
 </template>
 
