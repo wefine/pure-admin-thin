@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { reactive, ref, computed } from "vue";
+import { reactive, ref, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import dailyApi from "@/api/daily";
 import { ArrowDown, ArrowUp } from "@element-plus/icons-vue";
 import KeyValueEditor from "@/components/form/KeyValueEditor.vue";
+import { useParserStoreHook } from "@/store/modules/parser";
 
 // 获取路由参数
 const route = useRoute();
@@ -24,10 +25,8 @@ const formData = reactive({
     collect_cron: "0 20 * * *", // 默认每天20点采集
     push_cron: "0 7 * * *", // 默认每天7点推送
     collect: {
-      web_parse: ["CNGovWebParse", "HUXIUWebParse"],
-      wechat: {
-        财经新商业: "MzkzNDY4OTQ4MA"
-      }
+      web_parse: [],
+      wechat: {}
     },
     pre_process: {
       restrictions:
@@ -67,13 +66,23 @@ const domainOptions = [
   { label: "采购领域", value: "采购" }
 ];
 
-// 网站解析选项
-const webParseOptions = [
-  { label: "CNGovWebParse", value: "CNGovWebParse" },
-  { label: "HUXIUWebParse", value: "HUXIUWebParse" },
-  { label: "36KrWebParse", value: "36KrWebParse" },
-  { label: "TechWebParse", value: "TechWebParse" }
-];
+// 从状态管理中获取网站解析选项
+const parserStore = useParserStoreHook();
+const webParseOptions = computed(() => {
+  // 从解析器列表中提取parser_code和parser_description
+  return parserStore.getAllParsers.map(parser => ({
+    parser_code: parser.parser_code,
+    parser_description: parser.parser_description
+  }));
+});
+
+// 确保解析器数据已加载
+onMounted(async () => {
+  // 只有在store中parsers为空时才触发后台查询，否则直接使用现有数据
+  if (parserStore.getAllParsers.length === 0) {
+    await parserStore.loadAllParsers();
+  }
+});
 
 // 获取路由实例
 const router = useRouter();
@@ -94,9 +103,11 @@ const submitForm = async () => {
 
   // TODO: 这里添加API调用 - 使用完整数据对象
   const response = await dailyApi.createTask(completeData);
-  if (response.code === 0) {
+  if (response.code == 200) {
     ElMessage.success("创建任务成功");
     router.push("/daily-management/task-list");
+  } else {
+    ElMessage.error("创建任务失败");
   }
 };
 
@@ -147,9 +158,8 @@ const toggleCard = cardId => {
             >
               <div class="font-medium">一、基础信息</div>
               <el-button
-                type="text"
+                circle
                 :icon="cardVisible.card1 ? ArrowUp : ArrowDown"
-                @click.stop
               />
             </div>
           </template>
@@ -167,13 +177,13 @@ const toggleCard = cardId => {
                 />
               </el-form-item>
               <el-form-item
-                label="任务代码"
+                label="任务编码"
                 prop="task_code"
                 class="flex-1 min-w-[80px]"
               >
                 <el-input
                   v-model="formData.task_config.task_code"
-                  placeholder="自动生成的任务代码"
+                  placeholder="请输入任务编码"
                 />
               </el-form-item>
               <el-form-item
@@ -181,18 +191,11 @@ const toggleCard = cardId => {
                 prop="domain"
                 class="flex-1 min-w-[80px]"
               >
-                <el-select
+                <el-input
                   v-model="formData.task_config.domain"
-                  placeholder="请选择领域"
+                  placeholder="请输入所属领域"
                   class="w-full"
-                >
-                  <el-option
-                    v-for="item in domainOptions"
-                    :key="item.value"
-                    :label="item.label"
-                    :value="item.value"
-                  />
-                </el-select>
+                />
               </el-form-item>
             </div>
           </div>
@@ -207,9 +210,8 @@ const toggleCard = cardId => {
             >
               <div class="font-medium">二、采集配置</div>
               <el-button
-                type="text"
+                circle
                 :icon="cardVisible.card2 ? ArrowUp : ArrowDown"
-                @click.stop
               />
             </div>
           </template>
@@ -228,10 +230,21 @@ const toggleCard = cardId => {
               >
                 <el-option
                   v-for="item in webParseOptions"
-                  :key="item.value"
-                  :label="item.label"
-                  :value="item.value"
-                />
+                  :key="item.parser_code"
+                  :label="item.parser_code"
+                  :value="item.parser_code"
+                >
+                  <span style="float: left">{{ item.parser_code }}</span>
+                  <span
+                    style="
+                      float: right;
+                      font-size: 13px;
+                      color: var(--el-text-color-secondary);
+                    "
+                  >
+                    {{ item.parser_description }}
+                  </span>
+                </el-option>
               </el-select>
             </el-form-item>
             <el-form-item label="微信公众号">
@@ -254,9 +267,8 @@ const toggleCard = cardId => {
             >
               <div class="font-medium">三、预处理配置</div>
               <el-button
-                type="text"
+                circle
                 :icon="cardVisible.card3 ? ArrowUp : ArrowDown"
-                @click.stop
               />
             </div>
           </template>
@@ -292,9 +304,8 @@ const toggleCard = cardId => {
             >
               <div class="font-medium">四、后处理配置</div>
               <el-button
-                type="text"
+                circle
                 :icon="cardVisible.card4 ? ArrowUp : ArrowDown"
-                @click.stop
               />
             </div>
           </template>
@@ -345,9 +356,8 @@ const toggleCard = cardId => {
             >
               <div class="font-medium">五、推送配置</div>
               <el-button
-                type="text"
+                circle
                 :icon="cardVisible.card5 ? ArrowUp : ArrowDown"
-                @click.stop
               />
             </div>
           </template>
@@ -404,7 +414,7 @@ const toggleCard = cardId => {
               </el-form-item>
             </div>
 
-            <h4 class="font-medium mb-3 mt-5">IGPT配置</h4>
+            <h4 class="font-medium mb-3 mt-5">IGPT订阅配置</h4>
             <div class="flex flex-wrap gap-4">
               <el-form-item
                 label="事项ID"
@@ -424,20 +434,6 @@ const toggleCard = cardId => {
                 <el-input
                   v-model="formData.task_config.post_process.igpt.scene_code"
                   placeholder="事项编码"
-                />
-              </el-form-item>
-            </div>
-
-            <h4 class="font-medium mb-3 mt-5">知识库配置</h4>
-            <div class="flex flex-wrap gap-4">
-              <el-form-item
-                label="知识库ID"
-                prop="post_process.knowledge.kbase_id"
-                class="flex-1 min-w-[200px]"
-              >
-                <el-input
-                  v-model="formData.task_config.post_process.knowledge.kbase_id"
-                  placeholder="知识库ID"
                 />
               </el-form-item>
             </div>

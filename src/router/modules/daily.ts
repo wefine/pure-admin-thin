@@ -18,6 +18,16 @@ export default {
         title: $t("menus.dailyTaskList")
       }
     },
+
+    {
+      path: "/daily-management/parser-list",
+      name: "DailyParserList",
+      component: () => import("@/views/daily/parser/parserlist/index.vue"),
+      meta: {
+        icon: "ri:list-check",
+        title: $t("menus.dailyParserList")
+      }
+    },
     {
       path: "/daily-management/task-edit",
       name: "DailyManagementEdit",

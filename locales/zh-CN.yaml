@@ -75,6 +75,7 @@ menus:
   dailyManagement: 日报管理
   dailyTaskList: 日报任务列表
   dailyTaskEdit: 新建日报任务
+  dailyParserList: 网站解析列表
 status:
   pureLoad: 加载中...
   pureMessage: 消息

@@ -1,4 +1,4 @@
-import { get, post, put, del } from "./request";
+import { get, post, put } from "./request";
 
 /**
  * 日报任务相关的API接口
@@ -10,7 +10,7 @@ const dailyApi = {
    * @returns 任务列表
    */
   getTaskList(params: any) {
-    return get("/daily/task/list", params);
+    return post("/daily/task/list", params);
   },
 
   /**
@@ -47,7 +47,7 @@ const dailyApi = {
    * @returns 删除结果
    */
   deleteTask(id: string) {
-    return del(`/daily/task/${id}`);
+    return get(`/daily/task/remove/${id}`);
   },
 
   /**

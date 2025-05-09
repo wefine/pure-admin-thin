@@ -3,8 +3,9 @@ import router from "./router";
 import { setupStore } from "@/store";
 import { useI18n } from "@/plugins/i18n";
 import { getPlatformConfig } from "./config";
+import { useAppInit } from "@/hooks/useAppInit";
 import { MotionPlugin } from "@vueuse/motion";
-// import { useEcharts } from "@/plugins/echarts";
+import { useEcharts } from "@/plugins/echarts";
 import { createApp, type Directive } from "vue";
 import { useElementPlus } from "@/plugins/elementPlus";
 import { injectResponsiveStorage } from "@/utils/responsive";
@@ -58,8 +59,20 @@ getPlatformConfig(app).then(async config => {
   app.use(router);
   await router.isReady();
   injectResponsiveStorage(app, config);
-  app.use(MotionPlugin).use(useI18n).use(useElementPlus).use(Table);
+  app
+    .use(MotionPlugin)
+    .use(useI18n)
+    .use(useElementPlus)
+    .use(Table)
+    .use(useEcharts);
   // .use(PureDescriptions)
-  // .use(useEcharts);
+
+  // 初始化应用数据
+  const { loadAppData } = useAppInit();
+
+  // 挂载应用
   app.mount("#app");
+  // 应用挂载后加载数据
+  await loadAppData();
+  console.log("应用数据初始化完成");
 });

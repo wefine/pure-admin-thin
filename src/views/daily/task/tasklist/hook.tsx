@@ -1,58 +1,36 @@
-import dayjs from "dayjs";
 import { message } from "@/utils/message";
-import { getOnlineLogsList } from "@/api/system";
-import { reactive, ref, onMounted, toRaw } from "vue";
-import type { PaginationProps } from "@pureadmin/table";
+import dailyApi from "@/api/daily";
+import { ref, reactive, onMounted, toRaw } from "vue";
+import { createDefaultPagination, executePageQuery } from "@/utils/pagination";
 
 export function useRole() {
   const form = reactive({
-    username: ""
+    task_name: ""
   });
   const dataList = ref([]);
   const loading = ref(true);
-  const pagination = reactive<PaginationProps>({
-    total: 0,
-    pageSize: 10,
-    currentPage: 1,
-    background: true
-  });
+  // 使用分页工具函数创建默认分页配置
+  const pagination = createDefaultPagination();
   const columns: TableColumnList = [
     {
-      label: "序号",
-      prop: "id",
-      minWidth: 60
-    },
-    {
-      label: "用户名",
-      prop: "username",
+      label: "任务名称",
+      prop: "task_name",
       minWidth: 100
     },
     {
-      label: "登录 IP",
-      prop: "ip",
-      minWidth: 140
-    },
-    {
-      label: "登录地点",
-      prop: "address",
-      minWidth: 140
-    },
-    {
-      label: "操作系统",
-      prop: "system",
+      label: "任务编码",
+      prop: "task_code",
       minWidth: 100
     },
     {
-      label: "浏览器类型",
-      prop: "browser",
+      label: "采集时间",
+      prop: "collect_cron",
       minWidth: 100
     },
     {
-      label: "登录时间",
-      prop: "loginTime",
-      minWidth: 180,
-      formatter: ({ loginTime }) =>
-        dayjs(loginTime).format("YYYY-MM-DD HH:mm:ss")
+      label: "推送时间",
+      prop: "push_cron",
+      minWidth: 100
     },
     {
       label: "操作",
@@ -73,22 +51,52 @@ export function useRole() {
     console.log("handleSelectionChange", val);
   }
 
-  function handleOffline(row) {
-    message(`${row.username}已被强制下线`, { type: "success" });
-    onSearch();
+  // 处理删除任务
+  function handleDelete(row) {
+    dailyApi
+      .deleteTask(row.id)
+      .then(() => {
+        message(`已删除任务：${row.task_name}`, {
+          type: "success"
+        });
+        onSearch();
+      })
+      .catch(error => {
+        console.error("删除任务失败:", error);
+        message("删除任务失败，请重试", { type: "error" });
+      });
+  }
+
+  // 跳转到编辑页面
+  function handleEdit(row) {
+    window.location.href = `/daily-management/task-edit?id=${row.id}`;
+  }
+
+  // 触发任务采集
+  function handleTriggerCollect(row) {
+    dailyApi
+      .triggerCollect(row.id)
+      .then(() => {
+        message(`已触发任务采集：${row.task_name}`, {
+          type: "success"
+        });
+      })
+      .catch(error => {
+        console.error("触发采集失败:", error);
+        message("触发采集失败，请重试", { type: "error" });
+      });
   }
 
   async function onSearch() {
-    loading.value = true;
-    const { data } = await getOnlineLogsList(toRaw(form));
-    dataList.value = data.list;
-    pagination.total = data.total;
-    pagination.pageSize = data.pageSize;
-    pagination.currentPage = data.currentPage;
-
-    setTimeout(() => {
-      loading.value = false;
-    }, 500);
+    // 使用通用分页查询方法
+    dataList.value = await executePageQuery(
+      dailyApi.getTaskList,
+      toRaw(form),
+      dataList,
+      pagination,
+      loading,
+      "获取任务列表失败"
+    );
   }
 
   const resetForm = formEl => {
@@ -109,9 +117,11 @@ export function useRole() {
     pagination,
     onSearch,
     resetForm,
-    handleOffline,
     handleSizeChange,
     handleCurrentChange,
-    handleSelectionChange
+    handleSelectionChange,
+    handleDelete,
+    handleEdit,
+    handleTriggerCollect
   };
 }

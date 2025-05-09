@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { useRole } from "./hook";
+import { useParser } from "./hook";
 import { PureTableBar } from "@/components/RePureTableBar";
 import { useRenderIcon } from "@/components/ReIcon/src/hooks";
 
 import Refresh from "~icons/ep/refresh";
+
+defineOptions({
+  name: "ParserList"
+});
 
 const formRef = ref();
 const {
@@ -15,13 +19,14 @@ const {
   pagination,
   onSearch,
   resetForm,
+  handleEdit,
+  handleDelete,
+  handleToggleStatus,
+  handleTriggerParser,
   handleSizeChange,
   handleCurrentChange,
-  handleSelectionChange,
-  handleDelete,
-  handleEdit,
-  handleTriggerCollect
-} = useRole();
+  handleSelectionChange
+} = useParser();
 </script>
 
 <template>
@@ -34,10 +39,10 @@ const {
     >
       <div class="flex w-full justify-between items-center">
         <div class="flex items-center gap-4">
-          <el-form-item label="任务名称" prop="task_name">
+          <el-form-item label="解析器编码" prop="parser_code">
             <el-input
-              v-model="form.task_name"
-              placeholder="请输入任务名称"
+              v-model="form.parser_code"
+              placeholder="请输入解析器编码"
               clearable
               class="w-[180px]!"
             />
@@ -59,18 +64,18 @@ const {
             </el-button>
           </el-form-item>
         </div>
-        <div style="margin-top: -10px; margin-right: 10px">
+        <div style="display: none; margin-top: -10px; margin-right: 10px">
           <el-button
             type="success"
-            @click="$router.push('/daily-management/task-edit')"
+            @click="$router.push('/daily-management/parser-edit')"
           >
-            新建任务
+            新建解析器
           </el-button>
         </div>
       </div>
     </el-form>
 
-    <PureTableBar title="任务列表" :columns="columns" @refresh="onSearch">
+    <PureTableBar title="解析器列表" :columns="columns" @refresh="onSearch">
       <template v-slot="{ size, dynamicColumns }">
         <pure-table
           align-whole="center"
@@ -91,32 +96,15 @@ const {
           @page-size-change="handleSizeChange"
           @page-current-change="handleCurrentChange"
         >
-          <template #operation="{ row }">
-            <!-- 编辑按钮 -->
-            <!-- <el-button
-              class="reset-margin"
-              link
-              type="primary"
-              :size="size"
-              :icon="useRenderIcon('ep:edit')"
-              @click="handleEdit(row)"
-            /> -->
-
-            <!-- 删除按钮 -->
-            <el-popconfirm
-              :title="`是否删除任务：${row.task_name || '-'}`"
-              @confirm="handleDelete(row)"
+          <!-- 自定义网站链接列 -->
+          <template #parser_website="{ row }">
+            <a
+              :href="row.parser_website"
+              target="_blank"
+              class="text-blue-500 hover:underline"
             >
-              <template #reference>
-                <el-button
-                  class="reset-margin"
-                  link
-                  type="danger"
-                  :size="size"
-                  :icon="useRenderIcon('ep:delete')"
-                />
-              </template>
-            </el-popconfirm>
+              {{ row.parser_website }}
+            </a>
           </template>
         </pure-table>
       </template>
