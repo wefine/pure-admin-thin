@@ -82,35 +82,7 @@ const {
           @selection-change="handleSelectionChange"
           @page-size-change="handleSizeChange"
           @page-current-change="handleCurrentChange"
-        >
-          <template #operation="{ row }">
-            <!-- 编辑按钮 -->
-            <!-- <el-button
-              class="reset-margin"
-              link
-              type="primary"
-              :size="size"
-              :icon="useRenderIcon('ep:edit')"
-              @click="handleEdit(row)"
-            /> -->
-
-            <!-- 删除按钮 -->
-            <el-popconfirm
-              :title="`是否删除任务：${row.task_name || '-'}`"
-              @confirm="handleDelete(row)"
-            >
-              <template #reference>
-                <el-button
-                  class="reset-margin"
-                  link
-                  type="danger"
-                  :size="size"
-                  :icon="useRenderIcon('ep:delete')"
-                />
-              </template>
-            </el-popconfirm>
-          </template>
-        </pure-table>
+        />
       </template>
     </PureTableBar>
   </div>

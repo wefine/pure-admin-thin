@@ -1,6 +1,7 @@
 import { message } from "@/utils/message";
 import dailyApi from "@/api/daily";
 import { ref, reactive, onMounted, toRaw } from "vue";
+import { formatDate } from "@/utils/format";
 import { createDefaultPagination, executePageQuery } from "@/utils/pagination";
 
 export function useRole() {
@@ -23,19 +24,48 @@ export function useRole() {
       minWidth: 100
     },
     {
-      label: "采集时间",
-      prop: "collect_cron",
+      label: "执行类型",
+      prop: "task_type",
+      minWidth: 100,
+      cellRenderer: ({ row }) => (
+        <el-tag type={row.task_type === "push" ? "warning" : "info"}>
+          {row.task_type === "push" ? "推送" : "采集"}
+        </el-tag>
+      )
+    },
+    {
+      label: "执行状态",
+      prop: "task_status",
+      minWidth: 100,
+      cellRenderer: ({ row }) => {
+        const statusMap = {
+          "0": { type: "primary", label: "进行中" },
+          "1": { type: "success", label: "成功" },
+          "2": { type: "danger", label: "失败" }
+        };
+        const status = statusMap[row.task_status] || {
+          type: "info",
+          label: "未知"
+        };
+        return <el-tag type={status.type}>{status.label}</el-tag>;
+      }
+    },
+    {
+      label: "所属领域",
+      prop: "task_domain",
       minWidth: 100
     },
     {
-      label: "推送时间",
-      prop: "push_cron",
-      minWidth: 100
+      label: "任务开始时间",
+      prop: "created_date",
+      minWidth: 160,
+      formatter: row => formatDate(row.created_date)
     },
     {
-      label: "操作",
-      fixed: "right",
-      slot: "operation"
+      label: "最近更新时间",
+      prop: "last_updated_date",
+      minWidth: 160,
+      formatter: row => formatDate(row.last_updated_date)
     }
   ];
 
@@ -72,30 +102,15 @@ export function useRole() {
     window.location.href = `/daily-management/task-edit?id=${row.id}`;
   }
 
-  // 触发任务采集
-  function handleTriggerCollect(row) {
-    dailyApi
-      .triggerCollect(row.id)
-      .then(() => {
-        message(`已触发任务采集：${row.task_name}`, {
-          type: "success"
-        });
-      })
-      .catch(error => {
-        console.error("触发采集失败:", error);
-        message("触发采集失败，请重试", { type: "error" });
-      });
-  }
-
   async function onSearch() {
     // 使用通用分页查询方法
     dataList.value = await executePageQuery(
-      dailyApi.getTaskList,
+      dailyApi.getTaskRecordList,
       toRaw(form),
       dataList,
       pagination,
       loading,
-      "获取任务列表失败"
+      "获取任务记录列表失败"
     );
   }
 
@@ -121,7 +136,6 @@ export function useRole() {
     handleCurrentChange,
     handleSelectionChange,
     handleDelete,
-    handleEdit,
-    handleTriggerCollect
+    handleEdit
   };
 }

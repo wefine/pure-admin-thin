@@ -66,6 +66,15 @@ const dailyApi = {
    */
   triggerPush(id: string) {
     return post(`/daily/task/${id}/push`);
+  },
+
+  /**
+   * 获取任务记录列表
+   * @param params 查询参数
+   * @returns 任务记录列表
+   */
+  getTaskRecordList(params: any) {
+    return post("/daily/task/record/list", params);
   }
 };
 

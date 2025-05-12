@@ -2,6 +2,7 @@ import { message } from "@/utils/message";
 import dailyParserApi from "@/api/dailyParser";
 import { ref, reactive, onMounted, toRaw } from "vue";
 import { createDefaultPagination, executePageQuery } from "@/utils/pagination";
+import { formatDate } from "@/utils/format";
 
 export function useParser() {
   const form = reactive({
@@ -13,24 +14,22 @@ export function useParser() {
   const pagination = createDefaultPagination();
   const columns: TableColumnList = [
     {
-      label: "序号",
-      prop: "id",
-      minWidth: 100
-    },
-    {
       label: "解析器编码",
       prop: "parser_code",
+      align: "left",
       minWidth: 120
     },
     {
       label: "解析器网站",
       prop: "parser_website",
+      align: "left",
       minWidth: 200
     },
     {
       label: "解析器描述",
       prop: "parser_description",
-      minWidth: 250
+      align: "left",
+      minWidth: 400
     },
     {
       label: "状态",
@@ -41,6 +40,18 @@ export function useParser() {
           {row.enabled_flag === "Y" ? "启用" : "禁用"}
         </el-tag>
       )
+    },
+    {
+      label: "首次上线时间",
+      prop: "created_date",
+      minWidth: 100,
+      formatter: row => formatDate(row.created_date)
+    },
+    {
+      label: "最近更新时间",
+      prop: "last_updated_date",
+      minWidth: 100,
+      formatter: row => formatDate(row.last_updated_date)
     }
   ];
 
