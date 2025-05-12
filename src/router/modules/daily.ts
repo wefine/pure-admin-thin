@@ -18,16 +18,6 @@ export default {
         title: $t("menus.dailyTaskList")
       }
     },
-
-    {
-      path: "/daily-management/parser-list",
-      name: "DailyParserList",
-      component: () => import("@/views/daily/parser/parserlist/index.vue"),
-      meta: {
-        icon: "ri:list-check",
-        title: $t("menus.dailyParserList")
-      }
-    },
     {
       path: "/daily-management/task-edit",
       name: "DailyManagementEdit",
@@ -35,6 +25,16 @@ export default {
       meta: {
         icon: "ep:edit",
         title: $t("menus.dailyTaskEdit")
+      }
+    },
+    {
+      path: "/daily-management/task-record-list",
+      name: "DailyTaskRecordList",
+      component: () =>
+        import("@/views/daily/taskrecord/taskrecordlist/index.vue"),
+      meta: {
+        icon: "ep:edit",
+        title: $t("menus.dailyTaskRecordList")
       }
     }
   ]
