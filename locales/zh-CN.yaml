@@ -78,6 +78,7 @@ menus:
   dailyTaskRecordList: 任务执行记录
   collectorManagement: 采集管理
   collectorParserList: 网站解析列表
+  collectorParserUpload: 网站解析上传
 status:
   pureLoad: 加载中...
   pureMessage: 消息

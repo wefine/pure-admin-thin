@@ -80,6 +80,19 @@ const dailyParserApi = {
    */
   triggerParser(id: string) {
     return post(`${BASE_URL}/${id}/trigger`);
+  },
+
+  /**
+   * 上传解析器
+   * @param formData 解析器信息与文件的FormData对象
+   * @returns 上传结果
+   */
+  uploadParser(formData: FormData) {
+    return post(`${BASE_URL}/upload`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data"
+      }
+    });
   }
 };
 

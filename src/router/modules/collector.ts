@@ -18,6 +18,16 @@ export default {
         title: $t("menus.collectorParserList"),
         showParent: true
       }
+    },
+    {
+      path: "/collector-management/parser-upload",
+      name: "CollectorParserUpload",
+      component: () => import("@/views/collector/parserupload/index.vue"),
+      meta: {
+        icon: "ri:list-check",
+        title: $t("menus.collectorParserUpload"),
+        showParent: true
+      }
     }
   ]
 } satisfies RouteConfigsTable;
