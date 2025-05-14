@@ -1,11 +1,21 @@
 <script setup lang="ts">
-import { reactive, ref, computed, onMounted } from "vue";
+import { reactive, ref, computed, onMounted, watch, nextTick } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import dailyApi from "@/api/daily";
 import { ArrowDown, ArrowUp } from "@element-plus/icons-vue";
 import KeyValueEditor from "@/components/form/KeyValueEditor.vue";
 import { useParserStoreHook } from "@/store/modules/parser";
+import { useDark } from "@pureadmin/utils";
+import Codemirror from "codemirror-editor-vue3";
+import type { Editor, EditorConfiguration } from "codemirror";
+
+// 引入 CodeMirror 主题和扩展
+import "codemirror/theme/material-darker.css";
+import "codemirror/addon/hint/show-hint.css";
+import "codemirror/addon/hint/show-hint";
+import "codemirror/mode/markdown/markdown.js";
+import "codemirror/mode/gfm/gfm.js";
 
 // 获取路由参数
 const route = useRoute();
@@ -65,6 +75,52 @@ const domainOptions = [
   { label: "营销领域", value: "营销" },
   { label: "采购领域", value: "采购" }
 ];
+
+// 暗黑模式设置
+const { isDark } = useDark();
+
+// CodeMirror 编辑器实例
+const cminstance = ref<Editor | null>(null);
+
+// CodeMirror 配置选项
+const cmOptions: EditorConfiguration = reactive({
+  mode: "gfm",
+  theme: isDark.value ? "material-darker" : "default",
+  tabSize: 2,
+  readOnly: false,
+  autofocus: false,
+  autoRefresh: true,
+  lineNumbers: true,
+  lineWiseCopyCut: true,
+  gutters: ["CodeMirror-lint-markers"],
+  lint: true,
+  extraKeys: {
+    Ctrl: "autocomplete",
+    Tab: "autocomplete"
+  },
+  hintOptions: {
+    completeSingle: false
+  }
+});
+
+// CodeMirror 编辑器准备就绪回调
+const onReady = (cm: Editor) => {
+  cminstance.value = cm;
+  cm.on("keypress", () => cm.showHint());
+};
+
+// 监听暗黑模式变化，切换主题
+watch(
+  () => isDark.value,
+  async newVal => {
+    await nextTick();
+    if (cminstance.value) {
+      newVal
+        ? cminstance.value.setOption("theme", "material-darker")
+        : cminstance.value.setOption("theme", "default");
+    }
+  }
+);
 
 // 从状态管理中获取网站解析选项
 const parserStore = useParserStoreHook();
@@ -311,12 +367,17 @@ const toggleCard = cardId => {
           </template>
           <div v-show="cardVisible.card4">
             <el-form-item label="日报模板" prop="report_template">
-              <el-input
-                v-model="formData.report_template"
-                type="textarea"
-                :rows="10"
-                placeholder="请输入日报生成模板"
+              <Codemirror
+                v-model:value="formData.report_template"
+                width="100%"
+                height="350px"
+                :options="cmOptions"
+                :border="true"
+                @ready="onReady"
               />
+              <div class="text-xs text-gray-500 mt-1">
+                支持Markdown语法和Jinja2模板变量
+              </div>
             </el-form-item>
             <el-form-item label="模板变量映射" prop="template_mapping">
               <KeyValueEditor
@@ -470,5 +531,10 @@ const toggleCard = cardId => {
   :deep(.el-collapse-item__content) {
     padding: 20px;
   }
+}
+
+/* CodeMirror 相关样式 */
+.codemirror-container.bordered {
+  border: 1px solid var(--pure-border-color);
 }
 </style>

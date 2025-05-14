@@ -88,11 +88,7 @@ const dailyParserApi = {
    * @returns 上传结果
    */
   uploadParser(formData: FormData) {
-    return post(`${BASE_URL}/upload`, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data"
-      }
-    });
+    return post(`${BASE_URL}/upload`, formData);
   }
 };
 

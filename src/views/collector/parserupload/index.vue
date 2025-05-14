@@ -1,85 +1,79 @@
 <script setup lang="ts">
-import { reactive, ref } from "vue";
+import { reactive, ref, watch, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
-import { UploadFilled } from "@element-plus/icons-vue";
-import type { UploadProps, UploadUserFile } from "element-plus";
+import { CodeFilled } from "@element-plus/icons-vue";
 import dailyParserApi from "@/api/dailyParser";
+import { useDark } from "@pureadmin/utils";
+import Codemirror from "codemirror-editor-vue3";
+import type { Editor, EditorConfiguration } from "codemirror";
+
+// 引入 CodeMirror 主题和扩展
+import "codemirror/theme/material-darker.css";
+import "codemirror/addon/hint/show-hint.css";
+import "codemirror/addon/hint/show-hint";
+import "codemirror/mode/python/python.js";
 
 // 表单数据模型
 const formData = reactive({
   name: "", // 解析器名称
   website: "", // 解析网站地址
   description: "", // 解析器描述
-  parser_code: "", // 解析器编码 - 自动生成
+  code: "", // 解析器编码 - 自动生成
+  content: "", // Python代码内容
   enabled_flag: "Y" // 默认启用
 });
 
-// 上传的文件
-const fileList = ref<UploadUserFile[]>([]);
+// 暗黑模式设置
+const { isDark } = useDark();
+
+// CodeMirror 编辑器实例
+const cminstance = ref<Editor | null>(null);
+
+// CodeMirror 配置选项
+const cmOptions: EditorConfiguration = reactive({
+  mode: "python",
+  theme: isDark.value ? "material-darker" : "default",
+  tabSize: 4,
+  readOnly: false,
+  autofocus: true,
+  autoRefresh: true,
+  lineNumbers: true,
+  lineWiseCopyCut: true,
+  gutters: ["CodeMirror-lint-markers"],
+  lint: true,
+  extraKeys: {
+    Ctrl: "autocomplete",
+    Tab: "autocomplete"
+  },
+  hintOptions: {
+    completeSingle: false
+  }
+});
+
+// CodeMirror 编辑器准备就绪回调
+const onReady = (cm: Editor) => {
+  cminstance.value = cm;
+  cm.on("keypress", () => cm.showHint());
+};
+
+// 监听暗黑模式变化，切换主题
+watch(
+  () => isDark.value,
+  async newVal => {
+    await nextTick();
+    if (cminstance.value) {
+      newVal
+        ? cminstance.value.setOption("theme", "material-darker")
+        : cminstance.value.setOption("theme", "default");
+    }
+  }
+);
+
 const uploading = ref(false);
-const uploadRef = ref();
 
 // 获取路由实例
 const router = useRouter();
-
-// 文件上传配置
-const uploadConfig: UploadProps = {
-  accept: ".py", // 仅接受Python文件
-  limit: 1, // 限制上传数量
-  autoUpload: false, // 禁用自动上传
-  showFileList: true, // 显示已上传文件列表
-  multiple: false, // 不允许多选
-  drag: true, // 允许拖拽上传
-  onExceed: () => {
-    ElMessage.warning("只能上传一个解析器文件");
-  }
-};
-
-// 文件大小限制（1MB）
-const MAX_FILE_SIZE = 1 * 1024 * 1024;
-
-// 校验文件是否符合要求
-const validateFile = (file: File): boolean => {
-  // 校验文件类型
-  if (!file.name.endsWith(".py")) {
-    ElMessage.error("只支持Python（.py）格式的解析器文件");
-    return false;
-  }
-
-  // 校验文件大小
-  if (file.size > MAX_FILE_SIZE) {
-    ElMessage.error(
-      `文件大小不能超过1MB，当前文件大小为${(file.size / 1024 / 1024).toFixed(2)}MB`
-    );
-    return false;
-  }
-
-  // 校验文件名是否包含特殊字符
-  const validNamePattern = /^[\w\d\-_.]+\.py$/;
-  if (!validNamePattern.test(file.name)) {
-    ElMessage.error("文件名只能包含英文、数字、下划线、短横线和点");
-    return false;
-  }
-
-  return true;
-};
-
-// 文件变更处理
-const handleFileChange: UploadProps["onChange"] = uploadFile => {
-  const file = uploadFile.raw as File;
-
-  // 如果文件校验通过，则添加到文件列表
-  if (validateFile(file)) {
-    fileList.value = [uploadFile.raw as UploadUserFile];
-  } else {
-    // 校验失败时清空文件列表和上传组件
-    fileList.value = [];
-    if (uploadRef.value) {
-      uploadRef.value.clearFiles();
-    }
-  }
-};
 
 // 提交表单
 const submitForm = async () => {
@@ -88,21 +82,21 @@ const submitForm = async () => {
     return;
   }
 
-  if (fileList.value.length === 0) {
-    ElMessage.warning("请上传解析器文件");
+  if (!formData.content || formData.content.trim() === "") {
+    ElMessage.warning("请输入Python解析器代码");
     return;
   }
 
   try {
     // 校验表单必填项
-    if (!formData.parser_code) {
+    if (!formData.code) {
       ElMessage.warning("请输入解析器编码");
       return;
     }
 
     // 校验解析器编码格式
     const codePattern = /^[a-zA-Z0-9_]+$/;
-    if (!codePattern.test(formData.parser_code)) {
+    if (!codePattern.test(formData.code)) {
       ElMessage.warning("解析器编码只能包含英文、数字和下划线");
       return;
     }
@@ -114,9 +108,9 @@ const submitForm = async () => {
     formDataObj.append("name", formData.name);
     formDataObj.append("website", formData.website);
     formDataObj.append("description", formData.description);
-    formDataObj.append("parser_code", formData.parser_code);
+    formDataObj.append("code", formData.code);
     formDataObj.append("enabled_flag", formData.enabled_flag);
-    formDataObj.append("file", fileList.value[0].raw as File);
+    formDataObj.append("content", formData.content);
 
     // 调用API上传解析器
     const response = await dailyParserApi.uploadParser(formDataObj);
@@ -141,28 +135,15 @@ const submitForm = async () => {
   }
 };
 
-// 预览解析器代码
-const previewCode = () => {
-  // 实际项目中可以在此实现解析器代码预览功能
-  ElMessage.info("预览功能待实现");
-};
-
 // 重置表单
 const resetForm = () => {
   // 重置表单数据
   formData.name = "";
   formData.website = "";
   formData.description = "";
-  formData.parser_code = "";
+  formData.code = "";
+  formData.content = "";
   formData.enabled_flag = "Y";
-
-  // 清空文件列表
-  fileList.value = [];
-
-  // 重置上传组件
-  if (uploadRef.value) {
-    uploadRef.value.clearFiles();
-  }
 };
 </script>
 
@@ -194,9 +175,9 @@ const resetForm = () => {
         </el-form-item>
 
         <!-- 解析器编码 -->
-        <el-form-item label="解析器编码" prop="parser_code" required>
+        <el-form-item label="解析器编码" prop="code" required>
           <el-input
-            v-model="formData.parser_code"
+            v-model="formData.code"
             placeholder="请输入解析器编码，可由英文、数字、下划线组成"
           />
         </el-form-item>
@@ -206,39 +187,32 @@ const resetForm = () => {
           <el-input
             v-model="formData.description"
             type="textarea"
-            :rows="4"
-            placeholder="请输入解析器描述，包括功能、用途等信息"
+            :rows="2"
+            placeholder="请输入解析器的简要描述"
           />
         </el-form-item>
 
-        <!-- 文件上传 -->
-        <el-form-item label="解析器文件" required>
-          <el-upload
-            ref="uploadRef"
-            v-model:file-list="fileList"
-            class="upload-container w-full"
-            v-bind="uploadConfig"
-            @change="handleFileChange"
-          >
-            <el-button type="primary" :loading="uploading">
-              <el-icon><UploadFilled /></el-icon>
-              <span class="ml-1">选择文件</span>
-            </el-button>
-            <template #tip>
-              <div class="text-gray-500 mt-2 text-sm">
-                当前仅支持 .py
-                格式，单个文件不超过1MB，可拖拽或点击选择文件上传一个文件，上传即校验。
-              </div>
-            </template>
-          </el-upload>
+        <!-- Python代码编辑区域 -->
+        <el-form-item label="解析器代码" prop="content" required>
+          <Codemirror
+            v-model:value="formData.content"
+            width="100%"
+            height="400px"
+            :options="cmOptions"
+            :border="true"
+            @ready="onReady"
+          />
+          <div class="el-form-item__tip text-xs text-gray-500">
+            请输入符合Python语法的解析器代码
+          </div>
         </el-form-item>
 
         <!-- 操作按钮 -->
         <el-form-item>
-          <div class="flex gap-4 justify-center">
-            <el-button type="primary" :loading="uploading" @click="submitForm"
-              >上传解析器</el-button
-            >
+          <div class="flex gap-4">
+            <el-button type="primary" :loading="uploading" @click="submitForm">
+              上传解析器
+            </el-button>
             <el-button @click="resetForm">重置</el-button>
           </div>
         </el-form-item>
@@ -249,11 +223,16 @@ const resetForm = () => {
 
 <style lang="scss" scoped>
 .main {
-  padding: 20px;
-  font-weight: 500;
+  position: relative;
+  padding: 1rem;
 }
 
 :deep(.el-collapse-item__content) {
   padding: 20px;
+}
+
+/* CodeMirror 相关样式 */
+.codemirror-container.bordered {
+  border: 1px solid var(--pure-border-color);
 }
 </style>
