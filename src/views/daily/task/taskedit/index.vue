@@ -7,15 +7,9 @@ import { ArrowDown, ArrowUp } from "@element-plus/icons-vue";
 import KeyValueEditor from "@/components/form/KeyValueEditor.vue";
 import { useParserStoreHook } from "@/store/modules/parser";
 import { useDark } from "@pureadmin/utils";
-import Codemirror from "codemirror-editor-vue3";
-import type { Editor, EditorConfiguration } from "codemirror";
 
-// 引入 CodeMirror 主题和扩展
-import "codemirror/theme/material-darker.css";
-import "codemirror/addon/hint/show-hint.css";
-import "codemirror/addon/hint/show-hint";
-import "codemirror/mode/markdown/markdown.js";
-import "codemirror/mode/gfm/gfm.js";
+// 使用集中导入的CodeMirror组件和类型
+import { Codemirror, Editor, EditorConfiguration } from "@/utils/codemirror";
 
 // 获取路由参数
 const route = useRoute();
@@ -533,8 +527,8 @@ const toggleCard = cardId => {
   }
 }
 
-/* CodeMirror 相关样式 */
-.codemirror-container.bordered {
-  border: 1px solid var(--pure-border-color);
+/* 确保CodeMirror样式能正确应用 */
+:deep(.CodeMirror) {
+  /* 这里不需要具体样式，仅用于激活深度选择器 */
 }
 </style>

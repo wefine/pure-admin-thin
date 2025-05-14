@@ -36,22 +36,8 @@ service.interceptors.response.use(
   (response: AxiosResponse) => {
     const { data } = response;
 
-    if (data.code == 200) {
-      return data;
-    }
-
-    // 适配两种可能的返回格式
-    // 格式1: {code: 0, message: "成功", ...}
-    // 格式2: {success: true, message: "查询成功", data: [...], ...}
-    // 如果有success字段且为false，表示请求失败
-    if (data.success === false) {
-      ElMessage.error(data.message || "请求失败");
-      return Promise.reject(new Error(data.message || "请求失败"));
-    }
-
-    // 如果有code字段且不为0，表示请求失败
-    if (data.code !== undefined && data.code !== 0) {
-      ElMessage.error(data.message || "请求失败");
+    if (data.error !== undefined && data.error !== null) {
+      // ElMessage.error(data.error || "请求失败");
 
       // 如果状态码为401或403，可能是未登录或token过期
       if (data.code === 401 || data.code === 403) {
@@ -60,7 +46,7 @@ service.interceptors.response.use(
         window.location.href = "/login";
       }
 
-      return Promise.reject(new Error(data.message || "请求失败"));
+      return Promise.reject(new Error(data.error || "请求失败"));
     }
 
     return data;

@@ -39,10 +39,10 @@ const {
     >
       <div class="flex w-full justify-between items-center">
         <div class="flex items-center gap-4">
-          <el-form-item label="解析器编码" prop="parser_code">
+          <el-form-item label="解析器名称" prop="parser_name">
             <el-input
-              v-model="form.parser_code"
-              placeholder="请输入解析器编码"
+              v-model="form.parser_name"
+              placeholder="请输入解析器名称"
               clearable
               class="w-[180px]!"
             />

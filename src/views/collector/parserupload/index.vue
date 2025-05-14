@@ -5,14 +5,9 @@ import { ElMessage } from "element-plus";
 import { CodeFilled } from "@element-plus/icons-vue";
 import dailyParserApi from "@/api/dailyParser";
 import { useDark } from "@pureadmin/utils";
-import Codemirror from "codemirror-editor-vue3";
-import type { Editor, EditorConfiguration } from "codemirror";
 
-// 引入 CodeMirror 主题和扩展
-import "codemirror/theme/material-darker.css";
-import "codemirror/addon/hint/show-hint.css";
-import "codemirror/addon/hint/show-hint";
-import "codemirror/mode/python/python.js";
+// 使用集中导入的CodeMirror组件和类型
+import { Codemirror, Editor, EditorConfiguration } from "@/utils/codemirror";
 
 // 表单数据模型
 const formData = reactive({
@@ -116,15 +111,16 @@ const submitForm = async () => {
     const response = await dailyParserApi.uploadParser(formDataObj);
 
     // 检查响应状态
-    if (response.code !== 200) {
-      throw new Error(response.message || "上传解析器失败");
-    }
+    if (
+      response.error == null ||
+      response.error == "" ||
+      response.error == undefined
+    ) {
+      ElMessage.success("解析器上传成功");
 
-    ElMessage.success("解析器上传成功");
-    // 重置表单
-    resetForm();
-    // 导航到解析器列表
-    router.push("/collector-management/parser-list");
+      // 导航到解析器列表
+      router.push("/collector-management/parser-list");
+    }
   } catch (error) {
     console.error("上传解析器失败:", error);
     ElMessage.error(
@@ -231,8 +227,8 @@ const resetForm = () => {
   padding: 20px;
 }
 
-/* CodeMirror 相关样式 */
-.codemirror-container.bordered {
-  border: 1px solid var(--pure-border-color);
+/* 确保CodeMirror样式能正确应用 */
+:deep(.CodeMirror) {
+  /* 这里不需要具体样式，仅用于激活深度选择器 */
 }
 </style>

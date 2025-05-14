@@ -1,4 +1,4 @@
-import { get, post, put, del } from "./request";
+import { get, post, put } from "./request";
 
 /**
  * 解析器API的基础URL前缀
@@ -60,7 +60,7 @@ const dailyParserApi = {
    * @returns 删除结果
    */
   deleteParser(id: string) {
-    return del(`${BASE_URL}/${id}`);
+    return get(`${BASE_URL}/remove/${id}`);
   },
 
   /**

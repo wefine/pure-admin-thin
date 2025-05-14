@@ -3,10 +3,12 @@ import dailyParserApi from "@/api/dailyParser";
 import { ref, reactive, onMounted, toRaw } from "vue";
 import { createDefaultPagination, executePageQuery } from "@/utils/pagination";
 import { formatDate } from "@/utils/format";
+import { ElMessageBox } from "element-plus";
+import { Delete } from "@element-plus/icons-vue";
 
 export function useParser() {
   const form = reactive({
-    parser_code: ""
+    parser_name: ""
   });
   const dataList = ref([]);
   const loading = ref(true);
@@ -14,8 +16,8 @@ export function useParser() {
   const pagination = createDefaultPagination();
   const columns: TableColumnList = [
     {
-      label: "解析器编码",
-      prop: "parser_code",
+      label: "解析器名称",
+      prop: "parser_name",
       align: "left",
       minWidth: 120
     },
@@ -52,6 +54,27 @@ export function useParser() {
       prop: "last_updated_date",
       minWidth: 100,
       formatter: row => formatDate(row.last_updated_date)
+    },
+    {
+      label: "操作",
+      fixed: "right",
+      width: 180,
+      slot: "operation",
+      cellRenderer: ({ row }) => (
+        <div class="flex items-center justify-center gap-2">
+          <el-button
+            circle
+            size="small"
+            type="danger"
+            title="删除解析器"
+            icon={Delete}
+            onClick={event => {
+              event.stopPropagation();
+              confirmDeleteParser(row);
+            }}
+          />
+        </div>
+      )
     }
   ];
 
@@ -65,6 +88,25 @@ export function useParser() {
 
   function handleSelectionChange(val) {
     console.log("handleSelectionChange", val);
+  }
+
+  // 确认删除解析器
+  function confirmDeleteParser(row) {
+    ElMessageBox.confirm(
+      `确定要删除解析器 "${row.parser_code}" 吗？删除后不可恢复！`,
+      "删除确认",
+      {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning"
+      }
+    )
+      .then(() => {
+        handleDelete(row);
+      })
+      .catch(() => {
+        // 用户取消删除操作
+      });
   }
 
   // 处理删除解析器

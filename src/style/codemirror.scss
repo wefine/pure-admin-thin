@@ -1,0 +1,33 @@
+/* CodeMirror 公共样式 - 全局样式文件 */
+
+/* 边框样式 */
+:root .codemirror-container.bordered {
+  border: 1px solid var(--pure-border-color) !important;
+}
+
+/* 减小 CodeMirror 组件的行高 - 使用高优先级选择器 */
+:root .CodeMirror {
+  /* 设置基本字体大小 */
+  font-size: 13px !important;
+}
+
+/* 使用单独的选择器增加样式权重 */
+:root .CodeMirror .CodeMirror-line {
+  padding: 0 4px !important;
+  line-height: 1.3 !important;
+}
+
+:root .CodeMirror .CodeMirror-linenumber {
+  min-width: 20px !important;
+  padding: 0 5px 0 3px !important;
+}
+
+:root .CodeMirror .CodeMirror-lines {
+  padding: 4px 0 !important;
+}
+
+:root .CodeMirror .CodeMirror-cursor {
+  width: 0 !important;
+  border-right: none !important;
+  border-left: 1px solid black !important;
+}
