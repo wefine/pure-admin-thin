@@ -145,10 +145,18 @@ useEventListener(document, "keydown", ({ code }) => {
         <component :is="toRaw(illustration)" />
       </div>
       <div class="login-box">
-        <div class="login-form">
-          <avatar class="avatar" />
+        <div class="login-form" style="margin-top: -60px">
+          <img
+            src="@/assets/login/avatar.png"
+            class="avatar"
+            alt="avatar"
+            style="width: 120px; height: 120px; object-fit: contain"
+          />
           <Motion>
             <h2 class="outline-hidden">{{ title }}</h2>
+            <h4 class="outline-hidden" style="color: #909399">
+              Intelligence Information Insight Invocation
+            </h4>
           </Motion>
 
           <el-form
@@ -157,38 +165,6 @@ useEventListener(document, "keydown", ({ code }) => {
             :rules="loginRules"
             size="large"
           >
-            <Motion :delay="100">
-              <el-form-item
-                :rules="[
-                  {
-                    required: true,
-                    message: transformI18n($t('login.pureUsernameReg')),
-                    trigger: 'blur'
-                  }
-                ]"
-                prop="username"
-              >
-                <el-input
-                  v-model="ruleForm.username"
-                  clearable
-                  :placeholder="t('login.pureUsername')"
-                  :prefix-icon="useRenderIcon(User)"
-                />
-              </el-form-item>
-            </Motion>
-
-            <Motion :delay="150">
-              <el-form-item prop="password">
-                <el-input
-                  v-model="ruleForm.password"
-                  clearable
-                  show-password
-                  :placeholder="t('login.purePassword')"
-                  :prefix-icon="useRenderIcon(Lock)"
-                />
-              </el-form-item>
-            </Motion>
-
             <Motion :delay="250">
               <el-button
                 class="w-full mt-4!"
